@@ -429,7 +429,7 @@ Bfield::Bfield( double xyz_max, double xyz_min, int numGridPoints, bool Bgenerat
 }
 
 Bfield::Bfield( Trajectory_initializer &init) : xyz_max(init.xyz_max), xyz_min(xyz_min),
-                c_size(init.numGridPoints + 1), B_0(init.B_0), B_rms_turb(init.B_rms_turb) ,ran(15321){
+                c_size(init.numGridPoints + 1), B_0(init.B_0), B_rms_turb(init.B_rms_turb), ran(15321 + init.seed){
 
     // See class declaration for vector descriptions.
     c2 = pow(c_size, 2), c3 = pow(c_size, 3);
