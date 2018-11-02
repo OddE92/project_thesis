@@ -12,6 +12,15 @@ using std::cout; using std::endl; using std::ofstream;
 /************ RK4 STEP SIZE CTRL **********/
 int Trajectory::RK4t_step_size_control(){
 
+/*
+    The step size controls uses two RK4-solvers. The first one goes from t -> t+dt in one step.
+    The second goes from t -> t + dt/2, then from t + dt/2 -> t + dt. This should in theory give 
+    a more accurate approximation. The error is calculated as difference in the solution between the 
+    half and whole-step approximations. In this equation the total speed is used for the truncation error.
+    v(dt2) - v(dt1) = truncation error estimate, where
+    v = sqrt( vx^2 + vy^2 + vz^2 )    
+*/
+
     t = t_start;
     double bx, by, bz;                                      //To hold field at the given point
     double dt2 = dt/2;                                      //Step size for size controlled part
@@ -22,11 +31,11 @@ int Trajectory::RK4t_step_size_control(){
     vector<double> kvxdt1(4), kvxdt2(4), lvydt1(4), lvydt2(4), hvzdt1(4), hvzdt2(4);    //Runge-kutta coefficients
     double vxdt1, vydt1, vzdt1, vxdt2, vydt2, vzdt2;        //to hold speed and check error
 
-    x.reserve(2*n); y.reserve(2*n); z.reserve(2*n);         //Position and velocity vectors
-    vx.reserve(2*n); vy.reserve(2*n); z.reserve(2*n);
+   // x.reserve(2*n); y.reserve(2*n); z.reserve(2*n);         //Position and velocity vectors
+   // vx.reserve(2*n); vy.reserve(2*n); z.reserve(2*n);
 
-    x.resize(1); y.resize(1); z.resize(1);                  //set the first element to zero, but the
-    vx.resize(1); vy.resize(1); vz.resize(1);               //vector capacity is still kept as 2*n
+   // x.resize(1); y.resize(1); z.resize(1);                  //set the first element to zero, but the
+   // vx.resize(1); vy.resize(1); vz.resize(1);               //vector capacity is still kept as 2*n
 
     ofstream file;
 
@@ -39,50 +48,50 @@ int Trajectory::RK4t_step_size_control(){
         cout << "Couldn't open RK4_approx_stepsizectrl.dat" << endl;
     }
 
+    file << x[0] << ' ' << y[0] << ' ' << z[0] << '\n';             //write initial position to file
+
     //Generate the bfield at the starting point
     generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[0]/mtopc, y[0]/mtopc, z[0]/mtopc, do_gen_turb_at_point);
-
-    for (int i = 0; t <= t_end; i++){
+    int i;
+    for (i = 0; t <= t_end; i++){
         dt2 = dt / 2;
-        //Generate the field at the new point.
-        //generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[i], y[i], z[i]);
 
         //Standard implementation of a RK4-method for 3 coupled ODEs.
-        kvxdt1[0] = dt * unit_coeff * (vy[i] * bz - vz[i] * by);
-        lvydt1[0] = dt * unit_coeff * (vz[i] * bx - vx[i] * bz);
-        hvzdt1[0] = dt * unit_coeff * (vx[i] * by - vy[i] * bx);
-        kvxdt2[0] = dt2 * unit_coeff * (vy[i] * bz - vz[i] * by);
-        lvydt2[0] = dt2 * unit_coeff * (vz[i] * bx - vx[i] * bz);
-        hvzdt2[0] = dt2 * unit_coeff * (vx[i] * by - vy[i] * bx);
+        kvxdt1[0] = dt  * unit_coeff * (vy[0] * bz - vz[0] * by);
+        lvydt1[0] = dt  * unit_coeff * (vz[0] * bx - vx[0] * bz);
+        hvzdt1[0] = dt  * unit_coeff * (vx[0] * by - vy[0] * bx);
+        kvxdt2[0] = dt2 * unit_coeff * (vy[0] * bz - vz[0] * by);
+        lvydt2[0] = dt2 * unit_coeff * (vz[0] * bx - vx[0] * bz);
+        hvzdt2[0] = dt2 * unit_coeff * (vx[0] * by - vy[0] * bx);
 
-        kvxdt1[1] = dt * unit_coeff * ((vy[i] + lvydt1[0] / 2) * bz - (vz[i] + hvzdt1[0] / 2) * by);
-        lvydt1[1] = dt * unit_coeff * ((vz[i] + hvzdt1[0] / 2) * bx - (vx[i] + kvxdt1[0] / 2) * bz);
-        hvzdt1[1] = dt * unit_coeff * ((vx[i] + kvxdt1[0] / 2) * by - (vy[i] + lvydt1[0] / 2) * bx);
-        kvxdt2[1] = dt2 * unit_coeff * ((vy[i] + lvydt2[0] / 2) * bz - (vz[i] + hvzdt2[0] / 2) * by);
-        lvydt2[1] = dt2 * unit_coeff * ((vz[i] + hvzdt2[0] / 2) * bx - (vx[i] + kvxdt2[0] / 2) * bz);
-        hvzdt2[1] = dt2 * unit_coeff * ((vx[i] + kvxdt2[0] / 2) * by - (vy[i] + lvydt2[0] / 2) * bx);
+        kvxdt1[1] = dt  * unit_coeff * ((vy[0] + lvydt1[0] / 2) * bz - (vz[0] + hvzdt1[0] / 2) * by);
+        lvydt1[1] = dt  * unit_coeff * ((vz[0] + hvzdt1[0] / 2) * bx - (vx[0] + kvxdt1[0] / 2) * bz);
+        hvzdt1[1] = dt  * unit_coeff * ((vx[0] + kvxdt1[0] / 2) * by - (vy[0] + lvydt1[0] / 2) * bx);
+        kvxdt2[1] = dt2 * unit_coeff * ((vy[0] + lvydt2[0] / 2) * bz - (vz[0] + hvzdt2[0] / 2) * by);
+        lvydt2[1] = dt2 * unit_coeff * ((vz[0] + hvzdt2[0] / 2) * bx - (vx[0] + kvxdt2[0] / 2) * bz);
+        hvzdt2[1] = dt2 * unit_coeff * ((vx[0] + kvxdt2[0] / 2) * by - (vy[0] + lvydt2[0] / 2) * bx);
 
-        kvxdt1[2] = dt * unit_coeff * ((vy[i] + lvydt1[1] / 2) * bz - (vz[i] + hvzdt1[1] / 2) * by);
-        lvydt1[2] = dt * unit_coeff * ((vz[i] + hvzdt1[1] / 2) * bx - (vx[i] + kvxdt1[1] / 2) * bz);
-        hvzdt1[2] = dt * unit_coeff * ((vx[i] + kvxdt1[1] / 2) * by - (vy[i] + lvydt1[1] / 2) * bx);
-        kvxdt2[2] = dt2 * unit_coeff * ((vy[i] + lvydt2[1] / 2) * bz - (vz[i] + hvzdt2[1] / 2) * by);
-        lvydt2[2] = dt2 * unit_coeff * ((vz[i] + hvzdt2[1] / 2) * bx - (vx[i] + kvxdt2[1] / 2) * bz);
-        hvzdt2[2] = dt2 * unit_coeff * ((vx[i] + kvxdt2[1] / 2) * by - (vy[i] + lvydt2[1] / 2) * bx);
+        kvxdt1[2] = dt  * unit_coeff * ((vy[0] + lvydt1[1] / 2) * bz - (vz[0] + hvzdt1[1] / 2) * by);
+        lvydt1[2] = dt  * unit_coeff * ((vz[0] + hvzdt1[1] / 2) * bx - (vx[0] + kvxdt1[1] / 2) * bz);
+        hvzdt1[2] = dt  * unit_coeff * ((vx[0] + kvxdt1[1] / 2) * by - (vy[0] + lvydt1[1] / 2) * bx);
+        kvxdt2[2] = dt2 * unit_coeff * ((vy[0] + lvydt2[1] / 2) * bz - (vz[0] + hvzdt2[1] / 2) * by);
+        lvydt2[2] = dt2 * unit_coeff * ((vz[0] + hvzdt2[1] / 2) * bx - (vx[0] + kvxdt2[1] / 2) * bz);
+        hvzdt2[2] = dt2 * unit_coeff * ((vx[0] + kvxdt2[1] / 2) * by - (vy[0] + lvydt2[1] / 2) * bx);
 
-        kvxdt1[3] = dt * unit_coeff * ((vy[i] + lvydt1[2]) * bz - (vz[i] + hvzdt1[2]) * by);
-        lvydt1[3] = dt * unit_coeff * ((vz[i] + hvzdt1[2]) * bx - (vx[i] + kvxdt1[2]) * bz);
-        hvzdt1[3] = dt * unit_coeff * ((vx[i] + kvxdt1[2]) * by - (vy[i] + lvydt1[2]) * bx);
-        kvxdt2[3] = dt2 * unit_coeff * ((vy[i] + lvydt2[2]) * bz - (vz[i] + hvzdt2[2]) * by);
-        lvydt2[3] = dt2 * unit_coeff * ((vz[i] + hvzdt2[2]) * bx - (vx[i] + kvxdt2[2]) * bz);
-        hvzdt2[3] = dt2 * unit_coeff * ((vx[i] + kvxdt2[2]) * by - (vy[i] + lvydt2[2]) * bx);
+        kvxdt1[3] = dt  * unit_coeff * ((vy[0] + lvydt1[2]) * bz - (vz[0] + hvzdt1[2]) * by);
+        lvydt1[3] = dt  * unit_coeff * ((vz[0] + hvzdt1[2]) * bx - (vx[0] + kvxdt1[2]) * bz);
+        hvzdt1[3] = dt  * unit_coeff * ((vx[0] + kvxdt1[2]) * by - (vy[0] + lvydt1[2]) * bx);
+        kvxdt2[3] = dt2 * unit_coeff * ((vy[0] + lvydt2[2]) * bz - (vz[0] + hvzdt2[2]) * by);
+        lvydt2[3] = dt2 * unit_coeff * ((vz[0] + hvzdt2[2]) * bx - (vx[0] + kvxdt2[2]) * bz);
+        hvzdt2[3] = dt2 * unit_coeff * ((vx[0] + kvxdt2[2]) * by - (vy[0] + lvydt2[2]) * bx);
 
 /***** velocity calculation *****/
-        vxdt1 = vx[i] + (1.0 / 6) * (kvxdt1[0] + 2 * (kvxdt1[1] + kvxdt1[2]) + kvxdt1[3]);
-        vydt1 = vy[i] + (1.0 / 6) * (lvydt1[0] + 2 * (lvydt1[1] + lvydt1[2]) + lvydt1[3]);
-        vzdt1 = vz[i] + (1.0 / 6) * (hvzdt1[0] + 2 * (hvzdt1[1] + hvzdt1[2]) + hvzdt1[3]);
-        vxdt2 = vx[i] + (1.0 / 6) * (kvxdt2[0] + 2 * (kvxdt2[1] + kvxdt2[2]) + kvxdt2[3]);
-        vydt2 = vy[i] + (1.0 / 6) * (lvydt2[0] + 2 * (lvydt2[1] + lvydt2[2]) + lvydt2[3]);
-        vzdt2 = vz[i] + (1.0 / 6) * (hvzdt2[0] + 2 * (hvzdt2[1] + hvzdt2[2]) + hvzdt2[3]);
+        vxdt1 = vx[0] + (1.0 / 6) * (kvxdt1[0] + 2 * (kvxdt1[1] + kvxdt1[2]) + kvxdt1[3]);
+        vydt1 = vy[0] + (1.0 / 6) * (lvydt1[0] + 2 * (lvydt1[1] + lvydt1[2]) + lvydt1[3]);
+        vzdt1 = vz[0] + (1.0 / 6) * (hvzdt1[0] + 2 * (hvzdt1[1] + hvzdt1[2]) + hvzdt1[3]);
+        vxdt2 = vx[0] + (1.0 / 6) * (kvxdt2[0] + 2 * (kvxdt2[1] + kvxdt2[2]) + kvxdt2[3]);
+        vydt2 = vy[0] + (1.0 / 6) * (lvydt2[0] + 2 * (lvydt2[1] + lvydt2[2]) + lvydt2[3]);
+        vzdt2 = vz[0] + (1.0 / 6) * (hvzdt2[0] + 2 * (hvzdt2[1] + hvzdt2[2]) + hvzdt2[3]);
 /********************************/
 //Continue another halfstep for dt2
 
@@ -113,22 +122,33 @@ int Trajectory::RK4t_step_size_control(){
         truncation_error = std::abs(total_velocity_dt2 - total_velocity_dt1);
 
         if (truncation_error <= max_err && truncation_error >= min_err){    //if error is within desired interval
-            //Calculate the next velocity
-            vx.push_back(vxdt2);
-            vy.push_back(vydt2);
-            vz.push_back(vzdt2);
+            //Set next velocity
+            //vx.push_back(vxdt2);
+            //vy.push_back(vydt2);
+            //vz.push_back(vzdt2);
+
+            vx[1] = vxdt2;
+            vy[1] = vydt2;
+            vz[1] = vzdt2;
 
             //Calculate the next position
-            x.push_back(x[i] + mtopc * vx[i] * dt);                         //Adjust for parsec instead of m
-            y.push_back(y[i] + mtopc * vy[i] * dt);
-            z.push_back(z[i] + mtopc * vz[i] * dt);
+            //x.push_back(x[i] + mtopc * vx[i] * dt);                       //Adjust for parsec instead of m
+            //y.push_back(y[i] + mtopc * vy[i] * dt);
+            //z.push_back(z[i] + mtopc * vz[i] * dt);
 
-            file << x[i] << ' ' << y[i] << ' ' << z[i] << '\n';             //write position to file
+            x[1] = x[0] + mtopc * vx[0] * dt;
+            y[1] = y[0] + mtopc * vy[0] * dt;
+            z[1] = z[0] + mtopc * vz[0] * dt;
+
+            file << x[1] << ' ' << y[1] << ' ' << z[1] << '\n';             //write position to file
 
             t += dt;       
 
             //Generate the field at the new point.
-            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[i+1]/mtopc, y[i+1]/mtopc, z[i+1]/mtopc, do_gen_turb_at_point);
+            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1]/mtopc, y[1]/mtopc, z[1]/mtopc, do_gen_turb_at_point);
+
+            vx[0] = vx[1]; vy[0] = vy[1]; vz[0] = vz[1];                    //Setup for next iteration
+            x[0] = x[1]; y[0] = y[1]; z[0] = z[1];
 
         }else if(truncation_error > max_err){           //If the truncation error is too large, we need to decrease the stepsize
             dt = dt2;
@@ -136,38 +156,46 @@ int Trajectory::RK4t_step_size_control(){
             nbad++;
 
         }else if(truncation_error < min_err){           //If the truncation error is too small, take a larger step next time.
-            //Calculate the next velocity
-            vx.push_back(vxdt2);
-            vy.push_back(vydt2);
-            vz.push_back(vzdt2);
+            //Set next velocity
+            //vx.push_back(vxdt2);
+            //vy.push_back(vydt2);
+            //vz.push_back(vzdt2);
+
+            vx[1] = vxdt2;
+            vy[1] = vydt2;
+            vz[1] = vzdt2;
 
             //Calculate the next position
-            x.push_back(x[i] + mtopc * vx[i] * dt);                         //Adjust for parsec instead of m
-            y.push_back(y[i] + mtopc * vy[i] * dt);
-            z.push_back(z[i] + mtopc * vz[i] * dt);
+            //x.push_back(x[i] + mtopc * vx[i] * dt);                       //Adjust for parsec instead of m
+            //y.push_back(y[i] + mtopc * vy[i] * dt);
+            //z.push_back(z[i] + mtopc * vz[i] * dt);
 
-            file << x[i] << ' ' << y[i] << ' ' << z[i] << '\n';             //write position to file
+            x[1] = x[0] + mtopc * vx[0] * dt;
+            y[1] = y[0] + mtopc * vy[0] * dt;
+            z[1] = z[0] + mtopc * vz[0] * dt;
+
+            file << x[1] << ' ' << y[1] << ' ' << z[1] << '\n';             //write position to file
 
             t += dt; 
             dt = 2*dt;                                                      //double the step size
             ntoolow++;
 
             //Generate the field at the new point.
-            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[i+1]/mtopc, y[i+1]/mtopc, z[i+1]/mtopc, do_gen_turb_at_point);
+            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1]/mtopc, y[1]/mtopc, z[1]/mtopc, do_gen_turb_at_point);
               
+            vx[0] = vx[1]; vy[0] = vy[1]; vz[0] = vz[1];                    //Setup for next iteration
+            x[0] = x[1]; y[0] = y[1]; z[0] = z[1];
             
         }else{
             cout << "Something unexpected happened. Truncation error tests weren't hit. \n";
             return 1;
         }
 
-        cout << truncation_error << '\n';
-
     }//End for i
 
     file.close();
     
-    cout << "Number of steps taken: " << x.size() << endl;
+    cout << "Number of steps taken: " << i << endl;
     cout << "Number of bad steps taken: " << nbad << endl;
     cout << "Number of steps with too high accuracy: " << ntoolow << endl;
     cout << "Initial velocity: " << v_tot_init << " m/s" << endl;
@@ -201,37 +229,37 @@ int Trajectory::RK4t(){
 
     for (int i = 0; t<=t_end; i++){
 
-        generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[i]/mtopc, y[i]/mtopc, z[i]/mtopc, do_gen_turb_at_point);
+        generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[0]/mtopc, y[0]/mtopc, z[0]/mtopc, do_gen_turb_at_point);
         
 
         //Standard implementation of a RK4-method for 3 coupled ODEs.
-        kvx1 = dt * unit_coeff * (vy[i] * bz - vz[i] * by);
-        lvy1 = dt * unit_coeff * (vz[i] * bx - vx[i] * bz);
-        hvz1 = dt * unit_coeff * (vx[i] * by - vy[i] * bx);
+        kvx1 = dt * unit_coeff * (vy[0] * bz - vz[0] * by);
+        lvy1 = dt * unit_coeff * (vz[0] * bx - vx[0] * bz);
+        hvz1 = dt * unit_coeff * (vx[0] * by - vy[0] * bx);
 
-        kvx2 = dt * unit_coeff * ((vy[i] + lvy1 / 2) * bz - (vz[i] + hvz1 / 2) * by);
-        lvy2 = dt * unit_coeff * ((vz[i] + hvz1 / 2) * bx - (vx[i] + kvx1 / 2) * bz);
-        hvz2 = dt * unit_coeff * ((vx[i] + kvx1 / 2) * by - (vy[i] + lvy1 / 2) * bx);
+        kvx2 = dt * unit_coeff * ((vy[0] + lvy1 / 2) * bz - (vz[0] + hvz1 / 2) * by);
+        lvy2 = dt * unit_coeff * ((vz[0] + hvz1 / 2) * bx - (vx[0] + kvx1 / 2) * bz);
+        hvz2 = dt * unit_coeff * ((vx[0] + kvx1 / 2) * by - (vy[0] + lvy1 / 2) * bx);
 
-        kvx3 = dt * unit_coeff * ((vy[i] + lvy2 / 2) * bz - (vz[i] + hvz2 / 2) * by);
-        lvy3 = dt * unit_coeff * ((vz[i] + hvz2 / 2) * bx - (vx[i] + kvx2 / 2) * bz);
-        hvz3 = dt * unit_coeff * ((vx[i] + kvx2 / 2) * by - (vy[i] + lvy2 / 2) * bx);
+        kvx3 = dt * unit_coeff * ((vy[0] + lvy2 / 2) * bz - (vz[0] + hvz2 / 2) * by);
+        lvy3 = dt * unit_coeff * ((vz[0] + hvz2 / 2) * bx - (vx[0] + kvx2 / 2) * bz);
+        hvz3 = dt * unit_coeff * ((vx[0] + kvx2 / 2) * by - (vy[0] + lvy2 / 2) * bx);
 
-        kvx4 = dt * unit_coeff * ((vy[i] + lvy3) * bz - (vz[i] + hvz3) * by);
-        lvy4 = dt * unit_coeff * ((vz[i] + hvz3) * bx - (vx[i] + kvx3) * bz);
-        hvz4 = dt * unit_coeff * ((vx[i] + kvx3) * by - (vy[i] + lvy3) * bx);
+        kvx4 = dt * unit_coeff * ((vy[0] + lvy3) * bz - (vz[0] + hvz3) * by);
+        lvy4 = dt * unit_coeff * ((vz[0] + hvz3) * bx - (vx[0] + kvx3) * bz);
+        hvz4 = dt * unit_coeff * ((vx[0] + kvx3) * by - (vy[0] + lvy3) * bx);
 
         //Calculate next position
-        x[i + 1] = x[i] + mtopc * vx[i] * dt;
-        y[i + 1] = y[i] + mtopc * vy[i] * dt;
-        z[i + 1] = z[i] + mtopc * vz[i] * dt;
+        x[1] = x[0] + mtopc * vx[0] * dt;
+        y[1] = y[0] + mtopc * vy[0] * dt;
+        z[1] = z[0] + mtopc * vz[0] * dt;
 
         //Calculate next velocity
-        vx[i + 1] = vx[i] + (1.0 / 6) * (kvx1 + 2 * kvx2 + 2 * kvx3 + kvx4);
-        vy[i + 1] = vy[i] + (1.0 / 6) * (lvy1 + 2 * lvy2 + 2 * lvy3 + lvy4);
-        vz[i + 1] = vz[i] + (1.0 / 6) * (hvz1 + 2 * hvz2 + 2 * hvz3 + hvz4);
+        vx[1] = vx[0] + (1.0 / 6) * (kvx1 + 2 * kvx2 + 2 * kvx3 + kvx4);
+        vy[1] = vy[0] + (1.0 / 6) * (lvy1 + 2 * lvy2 + 2 * lvy3 + lvy4);
+        vz[1] = vz[0] + (1.0 / 6) * (hvz1 + 2 * hvz2 + 2 * hvz3 + hvz4);
 
-        file << x[i] << ' ' << y[i] << ' ' << z[i] << '\n';
+        file << x[0] << ' ' << y[0] << ' ' << z[0] << '\n';
 
         t += dt;
     }
@@ -248,7 +276,7 @@ int Trajectory::RK4t(){
 
 Trajectory::Trajectory() : Trajectory::Bfield(){
     n = ceil((t_end - t_start) / dt);
-    unit_coeff = q/m;
+    qm = q/m;
     max_err = 1.0e-05;
     min_err = 1.0e-09;
 
@@ -264,11 +292,12 @@ Trajectory::Trajectory(Trajectory_initializer &init) : Trajectory::Bfield(init){
     do_gen_turb_at_point = init.generate_turbulence;
 
     n = ceil((init.t_end - init.t_start) / init.dt);
+    t_start = init.t_start; t_end = init.t_end;
     
     E = init.E;
     q = init.q; m = init.m;
 
-    gamma_l = (m * c * c) / E;                              //Lorentz factor calculated from E = gamma_l * m * c^2
+    gamma_l = E/(1.0e6 * m);                                //Lorentz factor calculated from E = gamma_l * m * c^2, with [m] = [MeV/c^2]
 
     unit_coeff = 8.987 * q / (gamma_l * m);                 //Coefficient for the units when dv/dt = unit_coeff * V x B
 
@@ -278,8 +307,8 @@ Trajectory::Trajectory(Trajectory_initializer &init) : Trajectory::Bfield(init){
     min_err = init.min_err;
     max_err = init.max_err;
 
-    x.resize(n);  y.resize(n);  z.resize(n);
-    vx.resize(n); vy.resize(n); vz.resize(n);
+    x.resize(2);  y.resize(2);  z.resize(2);
+    vx.resize(2); vy.resize(2); vz.resize(2);
 
     x[0] = init.x0; y[0] = init.y0; z[0] = init.z0;         
 /*

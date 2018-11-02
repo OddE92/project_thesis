@@ -12,6 +12,7 @@ struct Trajectory_initializer{
     double min_err, max_err;
     double xyz_max, xyz_min;
     int numGridPoints;
+    int seed;
 
     bool generate_discrete_field;
     bool generate_turbulence;
