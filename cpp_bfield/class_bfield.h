@@ -1,3 +1,36 @@
+/**********************************************
+
+ * This program is a translation of the structure.f90 code written by Kristian Joten Andersen
+ * for his thesis "Charged Particle Trajectories in the Local Superbubble".
+
+ * The program was translated to C++ by Odd-Einar C. Nervik for his project thesis, under the guidance of
+ * Michael Kachlerieß.
+ 
+ * Some of the comments in the code are taken directly from the structure.f90-program.
+ * The program follows the method shown in:
+
+ *      Charged-particle motion in multidimensional magnetic-field turbulence
+ *      Giacalone, J. and Jokipii, J. R.
+ *      Department of Planetary Sciences, university of Arizona, Tucson AZ
+ *      May 1994
+
+ * The final calculation of the turbulent field follows the equation in:
+ 
+ *      The transport of cosmic rays across a turbulent magnetic field
+ *      Giacalone, J. and Jokipii, J. R.
+ *      Department of Planetary Sciences, university of Arizona, Tucson AZ
+ *      February 1999
+
+ * Which has a different rotation and translation direction than the 1994 article.
+
+ * The output of the program are two files. The first three numbers are the spatial coordinates x, y and z.
+ * The last three numbers are Bx, By and Bz respectively.
+ * *** The part where a box volume with a magnetic field has been deprecated. Now the field is generated at the provided point instead.
+ 
+ * The second file is scaled for improved readability when plotted.
+
+**********************************************/
+
 #ifndef CLASS_BFIELD
 #define CLASS_BFIELD
 
@@ -18,19 +51,15 @@ using std::vector; using std::complex;
 
 class Bfield{
 public:
-    vector< vector<double> > B, turbulencevec, B0vec;
-    vector<double> Bvec_scal, turbAtPoint;
+    vector<double> turbAtPoint;
 
 
     //Constructors and destructor
     Bfield();
-    Bfield(double xyz_max, double xyz_min, int numGridPoints, bool Bgenerate_turbulence);
     Bfield(Trajectory_initializer &init);
     ~Bfield();
 
     //Functions for generating the B-field
-    template <class Bfield_func_x, class Bfield_func_y, class Bfield_func_z>
-    void generate_bfield(double t, Bfield_func_x &Bx, Bfield_func_y &By, Bfield_func_z &Bz);
     template <class Bfield_func_x, class Bfield_func_y, class Bfield_func_z>
     void generate_bfield_at_point(Bfield_func_x &Bx, Bfield_func_y &By, Bfield_func_z &Bz, double t, double &bx, double &by, double &bz,
                                   double x, double y, double z, bool do_gen_turb_at_point);
@@ -40,10 +69,7 @@ public:
     int generate_turbulence_at_point(double x, double y, double z);
     void initialize_turbulence();
 
-    int get_bfield(double& bx, double& by, double& bz, const double x, const double y, const double z);
 
-    void write_turbulence_to_files();
-    void write_B_to_file();
 
     Ran ran;
 
@@ -52,10 +78,8 @@ private:
     //functions to initialize the turbulence. Only run these once!
     void initialize_phases();
     void initialize_normalization();
-    void initialize_coords();
 
     //Bools to check if functions need to be run or not.
-    bool generate_bfield_is_run = false;
     bool turbulence_is_initialized = false;
     
 
@@ -67,12 +91,12 @@ private:
     complex<double> im;                                     //For working with complex numbers
 
     //Magnetic field
-    const int n_k = 50;                                     //Nr. of modes used to generate the turbulence
+    int n_k = 50;                                           //Nr. of modes used to generate the turbulence
     double B_0 = 1.0;
     double B_rms_turb = 1.0;                                //Normalized magnetic field,
     const double gamma = 5.0 / 3.0;                         //Power law for the fluctuation spectrum
-    const double lambda_min = 0.2;                          //Smallest wavelength
-    const double lambda_max = 10.0;                         //Largest wavelength
+    double lambda_min = 0.2;                          //Smallest wavelength, in parsecs
+    double lambda_max = 10.0;                         //Largest wavelength, in parsecs
     const double k_min = two_pi / lambda_max;               //Smallest wavenumber
     const double k_max = two_pi / lambda_min;               //Largest wavenumber
 
@@ -92,38 +116,7 @@ private:
 
 /*** END NORMALIZED PARAMETERS **/
 
-/********* COORDINATES **********/
-
-    int c_size = 10, c2, c3;
-    vector< vector<double> > coord;                         //Vector of length c3, with 3 coordinates in each row
-    double scal = 0.3, cscal = 1.0;                         //Scaling factors for the plot.
-    double xyz_max, xyz_min;                                //max and min value for the coordinates (square box volume)
-
-/******* END COORDINATES ********/
-/********************************/
 };
-
-/********************************/
-/******* GENERATE B-FIELD *******/
-template <class Bfield_func_x, class Bfield_func_y, class Bfield_func_z>
-void Bfield::generate_bfield(double t, Bfield_func_x &Bx, Bfield_func_y &By, Bfield_func_z &Bz){
-    
-    if(!turbulence_is_initialized)
-    initialize_turbulence();                                                //Setup for generating turbulence
-
-    for(int i = 0; i < c3; i++){                                            //For each point:
-        B0vec[i][0] = Bx(t, coord[i][0], coord[i][1], coord[i][2]);         //Generate field in x-direction
-        B0vec[i][1] = By(t, coord[i][0], coord[i][1], coord[i][2]);         //Generate field in y-direction
-        B0vec[i][2] = Bz(t, coord[i][0], coord[i][1], coord[i][2]);         //Generate field in z-direction
-        generate_turbulence(i);                                             //Generate turbulence in all directions
-
-        B[i][0] = B0vec[i][0] + turbulencevec[i][0];                        //The total field is the sum of the turbulence
-        B[i][1] = B0vec[i][1] + turbulencevec[i][1];                        //and background field
-        B[i][2] = B0vec[i][2] + turbulencevec[i][2];
-    }
-    generate_bfield_is_run = true;
-}
-/***** END GENERATE B-FIELD *****/
 
 /********** GENERATE FIELD AT POINT **********/
 template <class Bfield_func_x, class Bfield_func_y, class Bfield_func_z>
