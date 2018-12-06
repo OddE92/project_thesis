@@ -13,21 +13,53 @@ from matplotlib.colors import Normalize
 
 d_i = np.loadtxt('data/eigenvalues.dat') 
 
+#d_i = np.delete(d_i, [0, 1], 0)
+
+#print(d_i)
+
 i = len(d_i)
+#print(i)
 
 t = []
 
-for k in range(0, i):
-    t.append(10**k)                     # t now holds the time-vector to plot the values against.
+l = 1
+k = 0
+for a in range(0, i):
+    t.append(l * 10**k)                     # t now holds the time-vector to plot the values against.
+    if(l == 9):
+        l = 1
+        k = k + 1
+    else:
+        l = l + 1
 
+#######################################################################################################
+#Calculate theoretical diffusion:
+R_l = 2.70252                               #Calculate with calculate_trajectory.exe
+
+g = 5.0/3.0
+L_max = 10.0
+L_maxmin = (R_l/10)/L_max
+L_c = 0.5 * L_max * (g-1)/g * ( (1-L_maxmin)**g / (1-L_maxmin)**(g-1)  )
+
+L0 = L_c / (2 * np.pi)                      #L_coh / 2*pi
+c = 0.3064                                  #pc/year
+
+D_iso = 3.019 * 10 ** 29 * (c * L0 / 3.0)*( (R_l / L0)**(2 - 5/3) + (R_l / L0)**2)      # cm^2/s
+
+#######################################################################################################
 
 fig1 = plt.figure(1)
 
-plt.title("Diffusion tensor")
-plt.xlabel("Time in years")
-plt.ylabel(r'$ \mathrm{d}_i$ $[\mathrm{pc}^2 / \mathrm{y}]$')
+plt.title('Diffusion tensor, $L_{max} = 10 \mathrm{pc}$')
+plt.xlabel('Time in years')
+plt.ylabel('$ \mathrm{D}(10 \mathrm{PeV})($ $[ \mathrm{cm}^2 / \mathrm{s}]$')
 
 for k in range(0, 3):
-    plt.loglog(t, d_i[:,k], linestyle='-', marker='x')
+    plt.loglog(t, 3.019 * 10 ** 29 * d_i[:,k], linestyle='-') #  
+
+plt.loglog(t, 3.019 * 10 ** 29 * d_i[:,3], linestyle='--', color="black") # 
+plt.loglog([0, 10**5], [D_iso, D_iso])
+
+plt.legend(('$d_1$', '$d_2$', '$d_3$', '$D_{avg}$', '$D_{isotropic}$'))
 
 plt.show()

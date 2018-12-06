@@ -8,16 +8,18 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
+from scipy.stats import gaussian_kde
+from numpy.fft import fft
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import Normalize
 
 trajectory = np.loadtxt('cpp_runge-kutta/RK4_approx_stepsizectrl.dat')                               # Reads the data from the RK4 approx
-#trajectory2 = np.loadtxt('cpp_runge-kutta/RK4_approx_t.dat')
-
+trajectory2 = np.loadtxt('data/B_average.dat')
+#mfield = np.loadtxt('data/test_mf.dat')
+test_rng = np.loadtxt('data/test_rng.dat')
 
 fig1 = plt.figure(1)
 ax = fig1.gca(projection='3d')
-
 ax.plot3D(trajectory[:,0], trajectory[:,1], trajectory[:,2])
 
 ax.set_title('Trajectory RK4 step size control')
@@ -27,16 +29,24 @@ ax.set_zlabel('z [pc]')
 
 #fig2 = plt.figure(2)
 
-#plt.plot(trajectory[:,0], trajectory[:,1])
+#plt.plot(trajectory2)
+
+
+
+
+#fig3 = plt.figure(3)
+#plt.plot(mfield)
+#print(np.mean(mfield))
+
+
+fig4 = plt.figure(4)
+plt.scatter(test_rng[:,1], test_rng[:,0])
 
 #fig2 = plt.figure(2)
 #ax = fig2.gca(projection='3d')
 
 #ax.plot3D(trajectory2[:,0], trajectory2[:,1], trajectory2[:,2])
 
-#ax.set_title('Trajectory RK4')
-#ax.set_xlabel('x')
-#ax.set_ylabel('y')
-#ax.set_zlabel('z')
+
 
 plt.show()
