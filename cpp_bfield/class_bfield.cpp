@@ -6,6 +6,7 @@
 #include <string>
 #include <time.h>
 #include <random>
+#include <cmath>
 
 #include "class_bfield.h"
 
@@ -17,7 +18,7 @@ int Bfield::generate_turbulence_at_point(double x, double y, double z){
     vector< complex<double> > delta_B(3);
     vector< complex<double> > F(n_k), epsilon_x(n_k), epsilon_y(n_k), epsilon_z(n_k), B_x_k(n_k), B_y_k(n_k), B_z_k(n_k);
 
-    // This function takes a position x, and generate a "random" turbulence to the B-field
+    // This function takes a position r, and generate a "random" turbulence to the B-field
 
     // Follow the articles calculation of delta_B (or delta_Omega, where delta_B = delta_Omega * mc/q)
 
@@ -75,6 +76,16 @@ void Bfield::initialize_turbulence(){
     }
 }
 
+void Bfield::reinitialize_turbulence(){
+
+    initialize_phases();
+    initialize_normalization();
+
+    turbulence_is_initialized = true;
+    
+}
+
+
 /********************************/
 /****** INITIALIZE PHASES *******/
 
@@ -85,7 +96,8 @@ void Bfield::initialize_phases(){
         a[i] = two_pi * ran.doub();                         // a = alpha
         b[i] = two_pi * ran.doub();                         // b = beta
         p[i] = two_pi * ran.doub();                         // p = phi
-        t[i] = M_PI * ran.doub();                           // t = theta
+        //t[i] = M_PI * ran.doub();
+        t[i] = std::acos(1 - 2*ran.doub());                 // t = theta with p(t) = sin(t)/2, 0<t<pi
 
         s[i] = 1.0;                                         // s = sign in epsilon (+-)
         r = ran.doub();
@@ -137,7 +149,7 @@ void Bfield::initialize_normalization(){
   for(int i = 0; i < n_k; i++){
       sum += pow(k[i]/k_min, -gamma);
   }
-  dB_min = B_rms_turb * sqrt(1 / sum);
+  dB_min = B_rms_turb * sqrt(2 / sum);
 
   for(int i = 0; i < n_k; i++){
       B_k[i] = dB_min * pow(k[i] / k_min, -gamma/2);

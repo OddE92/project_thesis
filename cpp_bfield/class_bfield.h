@@ -68,6 +68,7 @@ public:
     void generate_turbulence(int x);
     int generate_turbulence_at_point(double x, double y, double z);
     void initialize_turbulence();
+    void reinitialize_turbulence();
 
 
 
@@ -87,6 +88,7 @@ private:
 
     //pi = M_PI
     const double two_pi = 2 * M_PI;
+    const double mtopc = 3.24078e-17;
 
     complex<double> im;                                     //For working with complex numbers
 
@@ -95,8 +97,8 @@ private:
     double B_0 = 1.0;
     double B_rms_turb = 1.0;                                //Normalized magnetic field,
     const double gamma = 5.0 / 3.0;                         //Power law for the fluctuation spectrum
-    double lambda_min = 0.2;                          //Smallest wavelength, in parsecs
-    double lambda_max = 10.0;                         //Largest wavelength, in parsecs
+    double lambda_min = 0.2;                                //Smallest wavelength, in parsecs
+    double lambda_max = 10.0;                               //Largest wavelength, in parsecs
     const double k_min = two_pi / lambda_max;               //Smallest wavenumber
     const double k_max = two_pi / lambda_min;               //Largest wavenumber
 
