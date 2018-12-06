@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <stdio.h>
@@ -67,7 +68,8 @@ int Trajectory::RK4t_step_size_control(){
 
     //Generate the bfield at the starting point
     generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[0], y[0], z[0], do_gen_turb_at_point);
-    fileTurb << turbAtPoint[0] << ' ' << turbAtPoint[1] << ' ' << turbAtPoint[2] << '\n';
+    fileTurb << "x, y, z, |r| \n";
+    fileTurb << turbAtPoint[0] << ' ' << turbAtPoint[1] << ' ' << turbAtPoint[2] << ' ' << sqrt(x[0] * x[0] + y[0] * y[0] + z[0] * z[0]) << '\n';
     int i;
     for (i = 0; t <= t_end; i++){
         dt2 = dt / 2;
@@ -153,8 +155,9 @@ int Trajectory::RK4t_step_size_control(){
             t += dt;       
 
             //Generate the field at the new point.
-            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1], y[1], z[1], do_gen_turb_at_point);
-            fileTurb << turbAtPoint[0] << ' ' << turbAtPoint[1] << ' ' << turbAtPoint[2] << '\n';
+            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1]/mtopc, y[1]/mtopc, z[1]/mtopc, do_gen_turb_at_point);
+            fileTurb << turbAtPoint[0] << ' ' << turbAtPoint[1] << ' ' << turbAtPoint[2] << ' ' << sqrt(x[0] * x[0] + y[0] * y[0] + z[0] * z[0]) << '\n';
+            
 
             vx[0] = vx[1]; vy[0] = vy[1]; vz[0] = vz[1];                    //Setup for next iteration
             x[0] = x[1]; y[0] = y[1]; z[0] = z[1];
@@ -182,8 +185,9 @@ int Trajectory::RK4t_step_size_control(){
             ntoolow++;
 
             //Generate the field at the new point.
-            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1], y[1], z[1], do_gen_turb_at_point);
-            fileTurb << turbAtPoint[0] << ' ' << turbAtPoint[1] << ' ' << turbAtPoint[2] << '\n';
+            generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1]/mtopc, y[1]/mtopc, z[1]/mtopc, do_gen_turb_at_point);
+            fileTurb << turbAtPoint[0] << ' ' << turbAtPoint[1] << ' ' << turbAtPoint[2] << ' ' << turbAtPoint[2] << sqrt(x[0] * x[0] + y[0] * y[0] + z[0] * z[0]) << '\n';
+            
               
             vx[0] = vx[1]; vy[0] = vy[1]; vz[0] = vz[1];                    //Setup for next iteration
             x[0] = x[1]; y[0] = y[1]; z[0] = z[1];
@@ -226,7 +230,8 @@ int Trajectory::RK4t_step_size_control_nw(){                //This version does 
     double truncation_error;                                //To hold truncation error
     double total_velocity_dt1, total_velocity_dt2;          //To calculate truncation error
     int nbad = 0, ntoolow = 0;                              //Counters to check number of steps where dt changes
-    int count = 0;                                          //Counter to track when to send D_ij
+    int count = 0, logcount = 1;                            //Counters to track when to save D_ij
+    int posCounter = 0;
 
     vector<double> kvxdt1(4), kvxdt2(4), lvydt1(4), lvydt2(4), hvzdt1(4), hvzdt2(4);    //Runge-kutta coefficients
     double vxdt1, vydt1, vzdt1, vxdt2, vydt2, vzdt2;        //to hold speed and check error
@@ -320,7 +325,7 @@ int Trajectory::RK4t_step_size_control_nw(){                //This version does 
             generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1], y[1], z[1], do_gen_turb_at_point);
 
             vx[0] = vx[1]; vy[0] = vy[1]; vz[0] = vz[1];                    //Setup for next iteration
-            x[0] = x[1]; y[0] = y[1]; z[0] = z[1];
+             x[0] =  x[1];  y[0] =  y[1];  z[0] =  z[1];
 
         }else if(truncation_error > max_err){           //If the truncation error is too large, we need to decrease the stepsize
             dt = dt2;
@@ -346,27 +351,42 @@ int Trajectory::RK4t_step_size_control_nw(){                //This version does 
             generate_bfield_at_point(Bx, By, Bz, t, bx, by, bz, x[1], y[1], z[1], do_gen_turb_at_point);
               
             vx[0] = vx[1]; vy[0] = vy[1]; vz[0] = vz[1];                    //Setup for next iteration
-            x[0] = x[1]; y[0] = y[1]; z[0] = z[1];
+             x[0] =  x[1];  y[0] =  y[1];  z[0] =  z[1];
             
         }else{
             cout << "Something unexpected happened. Truncation error tests weren't hit. \n";
             return 1;
         }
+        
 
-        if( log10(t/31557600) - count > __DBL_EPSILON__ ){                  //This should scompute D_ij for every whole integer on the 
-                                                                            //log scale with time in years
-            
+        //     year == logcount * 10^(cont)
+        if( t/31557600 - (logcount * pow(10, count)) > __DBL_EPSILON__){
+
             //add each particles coordinate to the sum in D_ij
             //D_ij holds the upper half, including the diagonal, of a symmetric matrix
             //stored as a 1D-array to comply with MPIs send and recieve functions.
-            D_ij[6 * count + 0] += x[0] * x[0];                             //D_11
-            D_ij[6 * count + 1] += x[0] * y[0];                             //D_12
-            D_ij[6 * count + 2] += x[0] * z[0];                             //D_13
-            D_ij[6 * count + 3] += y[0] * y[0];                             //D_22
-            D_ij[6 * count + 4] += y[0] * z[0];                             //D_23
-            D_ij[6 * count + 5] += z[0] * z[0];                             //D_33
+            D_ij[posCounter + 0] += x[0] * x[0];                             //D_11
+            D_ij[posCounter + 1] += x[0] * y[0];                             //D_12
+            D_ij[posCounter + 2] += x[0] * z[0];                             //D_13
+            D_ij[posCounter + 3] += y[0] * y[0];                             //D_22
+            D_ij[posCounter + 4] += y[0] * z[0];                             //D_23
+            D_ij[posCounter + 5] += z[0] * z[0];                             //D_33
+            D_ij[posCounter + 6] += x[0] * x[0] + y[0] * y[0] + z[0] * z[0]; //D_average
 
-            count++;
+            D_ij_time[posCounter / 7] = t/31557600;
+
+            r_vect[3 * (posCounter / 7) + 0] = x[0];
+            r_vect[3 * (posCounter / 7) + 1] = y[0];
+            r_vect[3 * (posCounter / 7) + 2] = z[0];
+
+            if(logcount == 9){
+                count++;
+                logcount = 1;
+            }else{
+                logcount++;
+            }
+
+            posCounter += 7;
         }
 
 
@@ -461,6 +481,7 @@ Trajectory::Trajectory(Trajectory_initializer &init) : Trajectory::Bfield(init){
     do_gen_turb_at_point = init.generate_turbulence;
 
     t_start = init.t_start; t_end = init.t_end;
+    //dt_start = init.dt;
     
     E = init.E;
     q = init.q; m = init.m;
@@ -470,15 +491,22 @@ Trajectory::Trajectory(Trajectory_initializer &init) : Trajectory::Bfield(init){
     unit_coeff = 8.987 * q / (gamma_l * m);                 //Coefficient for the units when dv/dt = unit_coeff * V x B
 
     double square_root_in_v_tot = std::sqrt(1 - (1 / std::pow(gamma_l, 2)));
+    
+    
     v_tot_init = c * square_root_in_v_tot;                  //Find total initial velocity
-
+    cout << std::setprecision(20);
+    
     min_err = init.min_err;
     max_err = init.max_err;
 
     x.resize(2);  y.resize(2);  z.resize(2);
     vx.resize(2); vy.resize(2); vz.resize(2);
     
-    D_ij.resize((log10(init.t_end_y) + 1) * 6);
+    D_ij.resize(    init.D_ij_size * 7  ); 
+    D_ij_time.resize(init.D_ij_size);
+    r_vect.resize(init.D_ij_size * 3);                      //Holds x,y-coordinates of r
+
+    procID = init.procID;
 
     x[0] = init.x0; y[0] = init.y0; z[0] = init.z0;         
 /*
@@ -487,7 +515,7 @@ Trajectory::Trajectory(Trajectory_initializer &init) : Trajectory::Bfield(init){
     vx0 = init.vx0; vy0 = init.vy0; vz0 = init.vz0;
     vx[0] = init.vx0 * v_tot_init; vy[0] = init.vy0 * v_tot_init; vz[0] = init.vz0 * v_tot_init;
 
-    R_Larmor = 1.0810076e-15 * (v_tot_init / c) * (E / init.B_0);
+    R_Larmor = 1.0810076e-15 * (v_tot_init / c) * (E / init.B_rms_turb);
 }
 
 Trajectory::~Trajectory(){

@@ -29,7 +29,8 @@ struct Bfield_func_z{
 class Trajectory: public Bfield {
 public:
     vector<double> x, y, z, vx, vy, vz;
-    vector<double> D_ij;
+    vector<double> D_ij, D_ij_time;
+    vector<double> r_vect;
 
     bool do_gen_turb_at_point = false;
 
@@ -44,6 +45,8 @@ public:
     double v_tot_init;
     const double mtopc = 3.24078e-17;
     const double c = 2.99792458e8;
+
+    int procID;
     
     int RK4t();
     int RK4t_step_size_control();
@@ -58,6 +61,7 @@ public:
     Bfield_func_z Bz;
 
     double t_start = 0.0, t_end = 1000.0, dt = 0.1;
+    //double dt_start;
     double qm;
 };
 

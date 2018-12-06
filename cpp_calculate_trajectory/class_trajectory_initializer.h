@@ -16,6 +16,7 @@ struct Trajectory_initializer{
     int procID;
     int n_k;
     int N;
+    int D_ij_size;
     
     bool generate_turbulence;
 };
