@@ -9,18 +9,18 @@
 #include <fstream>
 #include <string>
 
-constexpr int N_TEST_PARTICLES      =   200;
-constexpr int N_RANDOM_MODES        =   1000;
+constexpr int N_TEST_PARTICLES      =   100;
+constexpr int N_RANDOM_MODES        =   500;
 constexpr int T_RUN_FOR_YEARS       =   1e5;
 constexpr double B_REGULAR_COMP     =   0.0;                                         //microGauss
 constexpr double B_TURBULENT_COMP   =   4.0;                                         //microGauss
 constexpr double E_TOTAL            =   1e16;                                        //eV
 constexpr double LAMBDA_MAX         =   10.0;                                        //pc
-constexpr double LAMBDA_MIN         =   0.27;                                        //pc    (0.27 = Rl/10 for B = 4, E = e16)
+constexpr double LAMBDA_MIN         =   0.0000027;                                        //pc    (0.27 = Rl/10 for B = 4, E = e16)
 constexpr double Q_CHARGE           =   1;                                           //# electron charges
 constexpr double M_MASS             =   938.2720813;                                 //MeV/c^2
-constexpr double ERROR_MAX          =   1.0e-01;
-constexpr double ERROR_MIN          =   1.0e-10;
+constexpr double ERROR_MAX          =   1.0e05;
+constexpr double ERROR_MIN          =   1.0e01;
 const int D_IJ_LENGTH               =   log10(T_RUN_FOR_YEARS) * 9 + 1;
 constexpr bool GEN_TURB_GLOB        =   true;
 
