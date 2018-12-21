@@ -2,7 +2,7 @@
 #       This script plots a heat map of the particle distribution       #
 #       in the (x,y)-plane at recorded times.                           #
 #                                                                       #
-#       Written by Odd-Einar C. Nervik                                  #
+#       Written by OddE92                                               #
 #########################################################################
 
 import matplotlib.pyplot as plt
