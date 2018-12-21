@@ -96,8 +96,8 @@ void Bfield::initialize_phases(){
         a[i] = two_pi * ran.doub();                         // a = alpha
         b[i] = two_pi * ran.doub();                         // b = beta
         p[i] = two_pi * ran.doub();                         // p = phi
-        //t[i] = M_PI * ran.doub();
-        t[i] = std::acos(1 - 2*ran.doub());                 // t = theta with p(t) = sin(t)/2, 0<t<pi
+        t[i] = M_PI * ran.doub();
+        //t[i] = std::acos(1 - 2*ran.doub());                 // t = theta with p(t) = sin(t)/2, 0<t<pi
 
         s[i] = 1.0;                                         // s = sign in epsilon (+-)
         r = ran.doub();
@@ -150,7 +150,6 @@ void Bfield::initialize_normalization(){
       sum += pow(k[i]/k_min, -gamma);
   }
   dB_min = B_rms_turb * sqrt(2 / sum);
-
   for(int i = 0; i < n_k; i++){
       B_k[i] = dB_min * pow(k[i] / k_min, -gamma/2);
   }
@@ -188,6 +187,9 @@ Bfield::Bfield( Trajectory_initializer &init) : B_0(init.B_0), B_rms_turb(init.B
     lambda_max = init.lambda_max;
     lambda_min = init.lambda_min;
 
+    k_min = two_pi / lambda_max;                     //Smallest wavenumber
+    k_max = two_pi / lambda_min;                     //Largest wavenumber
+
     im.imag(1.0); im.real(0.0);
 
     a.resize(n_k); b.resize(n_k); p.resize(n_k); t.resize(n_k); s.resize(n_k);              
@@ -195,6 +197,7 @@ Bfield::Bfield( Trajectory_initializer &init) : B_0(init.B_0), B_rms_turb(init.B
     st.resize(n_k);                                                                         
 
     B_k.resize(n_k); k.resize(n_k);
+    initialize_turbulence();
 
 }
 

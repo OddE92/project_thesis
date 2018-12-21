@@ -99,8 +99,8 @@ private:
     const double gamma = 5.0 / 3.0;                         //Power law for the fluctuation spectrum
     double lambda_min = 0.2;                                //Smallest wavelength, in parsecs
     double lambda_max = 10.0;                               //Largest wavelength, in parsecs
-    const double k_min = two_pi / lambda_max;               //Smallest wavenumber
-    const double k_max = two_pi / lambda_min;               //Largest wavenumber
+    double k_min = two_pi / lambda_max;                     //Smallest wavenumber
+    double k_max = two_pi / lambda_min;                     //Largest wavenumber
 
 /********* END CONSTANTS ********/
 
