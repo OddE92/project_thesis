@@ -54,7 +54,7 @@ int Trajectory::RK4t_step_size_control(){
     
     file.open(fileName);
 */
-    string fileName = "cpp_runge-kutta/RK4_approx_stepsizectrl.dat";       //For running test
+    string fileName = "data/RK4_approx_stepsizectrl.dat";       //For running test
 
     file.open(fileName);
     fileTurb.open("cpp_runge-kutta/turbulence.dat");
@@ -229,6 +229,8 @@ int Trajectory::RK4t_step_size_control_nw(){                //This version does 
     double dt2 = dt/2;                                      //Step size for size controlled part
     double truncation_error;                                //To hold truncation error
     double total_velocity_dt1, total_velocity_dt2;          //To calculate truncation error
+    double total_velocity_prev;                             //To calculate error tolerance
+    double scalemax, scalemin;                              //final error tolerance
     int nbad = 0, ntoolow = 0;                              //Counters to check number of steps where dt changes
     int count = 0, logcount = 1;                            //Counters to track when to save D_ij
     int posCounter = 0;
@@ -306,8 +308,11 @@ int Trajectory::RK4t_step_size_control_nw(){                //This version does 
 /********** CALCULATE AND CHECK TRUNCATION ERROR ***********/
         total_velocity_dt1 = sqrt(pow(vxdt1, 2) + pow(vydt1, 2) + pow(vzdt1, 2));
         total_velocity_dt2 = sqrt(pow(vxdt2, 2) + pow(vydt2, 2) + pow(vzdt2, 2));
+        //total_velocity_prev = sqrt(pow(vx[0], 2) + pow(vy[0], 2) + pow(vz[0], 2));
         truncation_error = std::abs(total_velocity_dt2 - total_velocity_dt1);
 
+        //scalemax = max_err + std::max(total_velocity_dt1, total_velocity_dt2)*max_err;
+        //scalemin = max_err + std::max(total_velocity_prev, total_velocity_dt2)*min_err;
         if (truncation_error <= max_err && truncation_error >= min_err){    //if error is within desired interval
             //Set next velocity
             vx[1] = vxdt2;
@@ -488,13 +493,16 @@ Trajectory::Trajectory(Trajectory_initializer &init) : Trajectory::Bfield(init){
 
     gamma_l = E/(1.0e6 * m);                                //Lorentz factor calculated from E = gamma_l * m * c^2, with [m] = [MeV/c^2]
 
-    unit_coeff = 8.987 * q / (gamma_l * m);                 //Coefficient for the units when dv/dt = unit_coeff * V x B
+    unit_coeff = 8.987 * q / (gamma_l * m);                             //Coefficient for the units when dv/dt = unit_coeff * V x B
 
+    //double square_root_in_v_tot = sqrt(pow(1e-6 * E, 2) - pow(m, 2)); 
     double square_root_in_v_tot = std::sqrt(1 - (1 / std::pow(gamma_l, 2)));
     
-    
+
+    //v_tot_init = (c / (gamma_l * m)) * square_root_in_v_tot;
     v_tot_init = c * square_root_in_v_tot;                  //Find total initial velocity
-    cout << std::setprecision(20);
+   
+    //cout << std::setprecision(20);
     
     min_err = init.min_err;
     max_err = init.max_err;

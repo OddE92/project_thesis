@@ -8,9 +8,9 @@
 #include <fstream>
 
 #define DX                0.01
-#define INSTANCES         2000
+#define INSTANCES         1000
 
-#define N_TEST_PARTICLES  4000
+#define N_TEST_PARTICLES  1000
 #define N_RANDOM_MODES    500
 #define T_RUN_FOR_YEARS   1e5
 #define B_REGULAR_COMP    0.0                                         //microGauss
