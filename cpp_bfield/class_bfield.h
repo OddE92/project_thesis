@@ -3,8 +3,8 @@
  * This program is a translation of the structure.f90 code written by Kristian Joten Andersen
  * for his thesis "Charged Particle Trajectories in the Local Superbubble".
 
- * The program was translated to C++ by Odd-Einar C. Nervik for his project thesis, under the guidance of
- * Michael Kachlerieß.
+ * The program was translated to C++ by OddE92 for his project thesis, under the guidance of
+ * ---.
  
  * Some of the comments in the code are taken directly from the structure.f90-program.
  * The program follows the method shown in:
